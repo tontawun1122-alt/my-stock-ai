@@ -19,7 +19,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-st.title("📊 D.E.E.P.V AI Analyst โดย Ton")
+st.title("📊 D.E.E.P.V AI Analyst BY Ton")
 st.write("แพลตฟอร์มวิเคราะห์หุ้นด้วย AI อัจฉริยะ")
 
 # --- 2. ส่วนรับข้อมูลจากผู้ใช้ ---
