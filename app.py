@@ -41,7 +41,7 @@ if analyze_btn:
             
             st.info(f"⌛ กำลังประมวลผลหุ้น {ticker}... ระบบ D.E.E.P.V กำลังทำงาน")
             
-            model = genai.GenerativeModel('gemini-1.5-flash') # ใช้ตัวแรงล่าสุด
+           model = genai.GenerativeModel('gemini-1.5-flash-latest') # ใช้ตัวแรงล่าสุด
             
             # ปรับ Prompt ให้ AI จัดหน้าสวยๆ ไม่ให้ภาษาไทยเพี้ยน
             prompt = f"""
