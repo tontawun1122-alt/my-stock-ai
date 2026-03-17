@@ -51,7 +51,7 @@ if analyze_btn:
             st.info(f"⌛ กำลังประมวลผลหุ้น {ticker}... ระบบ D.E.E.P.V กำลังทำงาน")
             
             # บรรทัดสำคัญ: แก้ไขชื่อโมเดลให้เป็นเวอร์ชันมาตรฐาน
-            model = genai.GenerativeModel('models/gemini-1.5-flash') 
+            model = genai.GenerativeModel(models[0])
             
             # ปรับ Prompt ให้ดึงข้อมูลจาก info มาใช้ด้วย AI จะได้วิเคราะห์แม่นๆ
             prompt = f"""
