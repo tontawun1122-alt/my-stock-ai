@@ -8,7 +8,7 @@ st.title("📊 D.E.E.P.V AI Analyst โดย Ton")
 
 # --- รับค่า API Key และชื่อหุ้น ---
 with st.sidebar:
-    api_key = st.text_input("ใส่ Google API Key ของคุณ:", type="password")
+    api_key = st.text_input("AIzaSyDaxpGUTzoB7JENNAo4avJCqTMBYj6a7vo", type="password")
     ticker = st.text_input("ชื่อหุ้น (เช่น NVDA, AAPL):", "NVDA")
     analyze_btn = st.button("เริ่มการวิเคราะห์")
 
