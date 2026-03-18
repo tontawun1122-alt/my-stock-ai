@@ -253,12 +253,37 @@ def build_html_report(ticker, d, ai):
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>DEEPV Report: {ticker}</title>
 <style>
-  body{{font-family:'Segoe UI',Tahoma,sans-serif;background:#0e1117;color:#e8eaf0;margin:0;padding:32px;max-width:900px;margin:0 auto;line-height:1.6}}
+  @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700;800&display=swap');
+  body{{font-family:'Sarabun','Segoe UI',Tahoma,sans-serif;background:#0e1117;color:#e8eaf0;margin:0;padding:32px;max-width:900px;margin:0 auto;line-height:1.6}}
   @media(max-width:600px){{body{{padding:16px}}}}
-  @media print{{body{{background:white;color:black}}}}
+  .print-btn{{
+    position:fixed;bottom:24px;right:24px;
+    background:linear-gradient(135deg,#4f7cff,#7c4fff);
+    color:white;border:none;border-radius:12px;
+    padding:14px 24px;font-size:1rem;font-weight:700;
+    cursor:pointer;box-shadow:0 4px 20px rgba(79,124,255,.4);
+    font-family:'Sarabun',sans-serif;
+    display:flex;align-items:center;gap:8px;
+    z-index:999;
+  }}
+  .print-btn:hover{{opacity:.9;transform:scale(1.02)}}
+  @media print{{
+    .print-btn{{display:none!important}}
+    body{{background:white!important;color:#111!important;padding:20px!important}}
+    body *{{color:#111!important}}
+    div[style*="background:#1c1f26"]{{background:#f5f5f5!important;border:1px solid #ddd!important}}
+    div[style*="background:#2d313d"]{{background:#e0e0e0!important}}
+    span[style*="color:#8b92a5"],p[style*="color:#8b92a5"],
+    div[style*="color:#8b92a5"]{{color:#555!important}}
+    span[style*="color:#c5c9d6"],p[style*="color:#c5c9d6"]{{color:#333!important}}
+    span[style*="color:#e8eaf0"],div[style*="color:#e8eaf0"]{{color:#111!important}}
+  }}
 </style>
 </head>
 <body>
+<button class="print-btn" onclick="window.print()">
+  🖨️ บันทึกเป็น PDF
+</button>
 
 <div style="border-bottom:1px solid #2d313d;padding-bottom:20px;margin-bottom:24px">
   <div style="font-size:.72rem;color:#8b92a5;margin-bottom:6px">D.E.E.P.V AI Analyst · {now}</div>
