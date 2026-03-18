@@ -193,7 +193,8 @@ Return this exact JSON structure:
 Rules: score 70-100=green, 40-69=yellow, 0-39=red | recommendation must be BUY/HOLD/AVOID"""
 
     try:
-        resp  = genai.GenerativeModel(mn).generate_content(prompt)
+        model = genai.GenerativeModel(mn, generation_config={"temperature": 0, "top_p": 1, "top_k": 1})
+        resp  = model.generate_content(prompt)
         clean = re.sub(r'^```json\s*|\s*```$', '', resp.text.strip())
         return json.loads(clean)
     except json.JSONDecodeError:
