@@ -26,16 +26,23 @@ else:
 st.markdown(f"""<style>
 .stApp{{background:{bg}}}
 [data-testid="metric-container"]{{
-    background:{bg2};border:1px solid {border};
-    border-radius:8px;padding:8px 12px;
+    background:{bg2}!important;border:1px solid {border}!important;
+    border-radius:8px!important;padding:6px 10px!important;min-height:0!important;
 }}
-[data-testid="metric-container"] label{{
-    font-size:.6rem!important;color:{muted}!important;
-    text-transform:uppercase;letter-spacing:.04em;
+[data-testid="metric-container"] label,
+[data-testid="metric-container"] [data-testid="stMetricLabel"] p,
+[data-testid="metric-container"] [data-testid="stMetricLabel"] span{{
+    font-size:.58rem!important;color:{muted}!important;
+    text-transform:uppercase!important;letter-spacing:.04em!important;
+    line-height:1.2!important;margin:0!important;
 }}
-[data-testid="metric-container"] [data-testid="stMetricValue"]{{
-    font-size:.92rem!important;font-weight:700!important;color:{txt}!important;
+[data-testid="metric-container"] [data-testid="stMetricValue"],
+[data-testid="metric-container"] [data-testid="stMetricValue"] div{{
+    font-size:.88rem!important;font-weight:700!important;
+    color:{txt}!important;line-height:1.3!important;
+    padding:0!important;margin:0!important;
 }}
+[data-testid="metric-container"] [data-testid="stMetricDelta"]{{display:none!important;}}
 [data-testid="stSidebar"]{{background:{bg3};border-right:1px solid {border}}}
 .stButton>button{{
     background:linear-gradient(135deg,#4f7cff,#7c4fff);
@@ -583,9 +590,101 @@ else:
                   unsafe_allow_html=True)
 
                 st.markdown("<br>", unsafe_allow_html=True)
-                rpt = f"""<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8"><title>DEEPV {ticker}</title>
-<style>body{{font-family:'Segoe UI',sans-serif;background:#0e1117;color:#e8eaf0;padding:32px;max-width:860px;margin:0 auto}}</style></head>
-<body><h2>{d.get('name',ticker)} ({ticker}) — DEEPV: {overall} | {rec}</h2><p>{ai.get('summary','')}</p></body></html>"""
+
+                # ── Build full HTML report
+                dim_rows = ""
+                for key, dim in ai.get("dimensions",{}).items():
+                    s_   = dim.get("score",0)
+                    lc_  = "#34d399" if s_>=70 else "#fbbf24" if s_>=40 else "#f87171"
+                    lbl_ = ("🟢 เสี่ยงต่ำ" if s_>=70 else "🟡 เสี่ยงกลาง" if s_>=40 else "🔴 เสี่ยงสูง") if TH else ("🟢 Low Risk" if s_>=70 else "🟡 Med Risk" if s_>=40 else "🔴 High Risk")
+                    dim_rows += f"""
+                    <div style="border-left:4px solid {lc_};background:#1c1f26;border-radius:10px;padding:16px;margin-bottom:12px">
+                      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+                        <div>
+                          <span style="font-size:1.2rem;font-weight:800;color:{lc_};margin-right:10px">{key}</span>
+                          <span style="font-size:1rem;font-weight:600;color:#e8eaf0">{dim.get('name','')}</span>
+                        </div>
+                        <div style="text-align:right">
+                          <span style="font-size:1.3rem;font-weight:700;color:{lc_}">{s_}/100</span>
+                          <span style="margin-left:8px;background:{lc_}22;color:{lc_};border:1px solid {lc_}55;border-radius:5px;padding:2px 8px;font-size:.75rem">{lbl_}</span>
+                        </div>
+                      </div>
+                      <div style="background:#2d313d;border-radius:999px;height:5px;margin-bottom:10px;overflow:hidden">
+                        <div style="background:{lc_};width:{s_}%;height:100%;border-radius:999px"></div>
+                      </div>
+                      <p style="color:#8b92a5;margin:0 0 5px;font-size:.8rem;font-style:italic">{dim.get('summary','')}</p>
+                      <p style="color:#c5c9d6;margin:0;font-size:.88rem;line-height:1.7">{dim.get('analysis','')}</p>
+                    </div>"""
+
+                rpt = f"""<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DEEPV Report: {ticker}</title>
+<style>
+  body{{font-family:'Segoe UI',Tahoma,sans-serif;background:#0e1117;color:#e8eaf0;margin:0;padding:32px;max-width:900px;margin:0 auto}}
+  .grid3{{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}}
+  .grid2{{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}}
+  .card{{background:#1c1f26;border-radius:8px;padding:12px}}
+  .clabel{{font-size:.65rem;color:#8b92a5;text-transform:uppercase;letter-spacing:.04em}}
+  .cvalue{{font-size:1rem;font-weight:700;color:#e8eaf0;margin-top:2px}}
+  @media(max-width:600px){{.grid3{{grid-template-columns:repeat(2,1fr)}}.grid2{{grid-template-columns:1fr}}}}
+  @media print{{body{{background:#fff;color:#000}}}}
+</style>
+</head>
+<body>
+
+<div style="border-bottom:1px solid #2d313d;padding-bottom:16px;margin-bottom:20px">
+  <div style="font-size:.7rem;color:#8b92a5;margin-bottom:4px">D.E.E.P.V AI Analyst · {datetime.now().strftime("%d %b %Y %H:%M")}</div>
+  <h1 style="margin:0 0 6px;font-size:1.6rem">{d.get('name',ticker)} <span style="color:#8b92a5;font-size:.9rem">({ticker})</span></h1>
+  <div style="font-size:.8rem;color:#8b92a5;margin-bottom:12px">{d.get('sector','—')} · {d.get('industry','—')} · {d.get('country','—')}</div>
+  <div style="display:flex;align-items:center;gap:24px;flex-wrap:wrap">
+    <span style="font-size:1.5rem;font-weight:700">${d.get('price',0):,.2f}</span>
+    <div style="text-align:center">
+      <div style="font-size:2.4rem;font-weight:800;color:{oc}">{overall}</div>
+      <div style="font-size:.6rem;color:#8b92a5;text-transform:uppercase">DEEPV Score</div>
+    </div>
+    <div style="text-align:center">
+      <div style="font-size:1.4rem;font-weight:800;color:{rc};background:{rc}18;border:1px solid {rc}44;border-radius:8px;padding:5px 14px">{rec}</div>
+      <div style="font-size:.6rem;color:#8b92a5;margin-top:3px">Signal</div>
+    </div>
+  </div>
+</div>
+
+<div style="margin-bottom:6px;font-size:.62rem;color:#8b92a5;text-transform:uppercase;letter-spacing:.1em">Key Metrics</div>
+<div class="grid3">
+  <div class="card"><div class="clabel">Market Cap</div><div class="cvalue">{fmt(d.get('cap',0))}</div></div>
+  <div class="card"><div class="clabel">P/E (Trail)</div><div class="cvalue">{xf(d.get('pe'))}</div></div>
+  <div class="card"><div class="clabel">Fwd P/E</div><div class="cvalue">{xf(d.get('fwd_pe'))}</div></div>
+  <div class="card"><div class="clabel">Revenue</div><div class="cvalue">{fmt(d.get('rev'))}</div></div>
+  <div class="card"><div class="clabel">Gross Margin</div><div class="cvalue">{pct(d.get('gm'))}</div></div>
+  <div class="card"><div class="clabel">ROE</div><div class="cvalue">{pct(d.get('roe'))}</div></div>
+  <div class="card"><div class="clabel">Net Margin</div><div class="cvalue">{pct(d.get('nm'))}</div></div>
+  <div class="card"><div class="clabel">FCF</div><div class="cvalue">{fmt(d.get('fcf'))}</div></div>
+  <div class="card"><div class="clabel">Beta</div><div class="cvalue">{f"{d['beta']:.2f}" if d.get('beta') else '—'}</div></div>
+</div>
+
+<div style="margin:16px 0 8px;font-size:.62rem;color:#8b92a5;text-transform:uppercase;letter-spacing:.1em">D.E.E.P.V Analysis</div>
+{dim_rows}
+
+<div class="grid2" style="margin-top:12px">
+  <div style="background:#1c1f26;border-radius:10px;padding:14px;border-left:3px solid #34d399">
+    <div style="font-size:.62rem;color:#8b92a5;text-transform:uppercase;margin-bottom:6px">{"✅ ปัจจัยบวก" if TH else "✅ Catalysts"}</div>
+    <p style="margin:0;color:#c5c9d6;font-size:.85rem;line-height:1.7">{ai.get('catalysts','—')}</p>
+  </div>
+  <div style="background:#1c1f26;border-radius:10px;padding:14px;border-left:3px solid #f87171">
+    <div style="font-size:.62rem;color:#8b92a5;text-transform:uppercase;margin-bottom:6px">{"⚠️ ความเสี่ยง" if TH else "⚠️ Risks"}</div>
+    <p style="margin:0;color:#c5c9d6;font-size:.85rem;line-height:1.7">{ai.get('risks','—')}</p>
+  </div>
+</div>
+
+<div style="background:#1c1f26;border-radius:10px;padding:14px;border-left:3px solid {rc};margin-top:10px">
+  <div style="font-size:.62rem;color:#8b92a5;text-transform:uppercase;margin-bottom:6px">{"🧠 สรุปภาพรวม" if TH else "🧠 Summary"}</div>
+  <p style="margin:0;color:#c5c9d6;font-size:.88rem;line-height:1.7">{ai.get('summary','—')}</p>
+</div>
+
+</body></html>"""
                 st.download_button("📄 " + ("ดาวน์โหลด Report" if TH else "Download Report"),
                     data=rpt.encode("utf-8"),
                     file_name=f"DEEPV_{ticker}_{datetime.now().strftime('%Y%m%d')}.html",
