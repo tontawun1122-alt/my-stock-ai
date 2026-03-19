@@ -737,25 +737,22 @@ else:
                       </div>
                     </div>""", unsafe_allow_html=True)
                 else:
-
-                else:
                     cl2, cr2 = st.columns(2)
-                with cl2:
-                    st.markdown(f"""<div style="background:{bg2};border-radius:10px;padding:13px;border-left:3px solid #34d399;border:1px solid {border}">
-                      <div style="font-size:.6rem;color:{muted};text-transform:uppercase;margin-bottom:6px">{"✅ ปัจจัยบวก" if TH else "✅ Catalysts"}</div>
-                      <p style="color:{muted};margin:0;line-height:1.65;font-size:.82rem">{ai.get('catalysts','—')}</p></div>""",
+                    with cl2:
+                        st.markdown(f"""<div style="background:{bg2};border-radius:10px;padding:13px;border-left:3px solid #34d399;border:1px solid {border}">
+                          <div style="font-size:.6rem;color:{muted};text-transform:uppercase;margin-bottom:6px">{"✅ ปัจจัยบวก" if TH else "✅ Catalysts"}</div>
+                          <p style="color:{muted};margin:0;line-height:1.65;font-size:.82rem">{ai.get('catalysts','—')}</p></div>""",
+                          unsafe_allow_html=True)
+                    with cr2:
+                        st.markdown(f"""<div style="background:{bg2};border-radius:10px;padding:13px;border-left:3px solid #f87171;border:1px solid {border}">
+                          <div style="font-size:.6rem;color:{muted};text-transform:uppercase;margin-bottom:6px">{"⚠️ ความเสี่ยง" if TH else "⚠️ Risks"}</div>
+                          <p style="color:{muted};margin:0;line-height:1.65;font-size:.82rem">{ai.get('risks','—')}</p></div>""",
+                          unsafe_allow_html=True)
+                    st.markdown(f"""<div style="background:{bg2};border-radius:10px;padding:13px;
+                      border-left:3px solid {rc};border:1px solid {border};margin-top:8px">
+                      <div style="font-size:.6rem;color:{muted};text-transform:uppercase;margin-bottom:6px">{"🧠 สรุปภาพรวม" if TH else "🧠 Summary"}</div>
+                      <p style="color:{muted};margin:0;line-height:1.65;font-size:.85rem">{ai.get('summary','')}</p></div>""",
                       unsafe_allow_html=True)
-                with cr2:
-                    st.markdown(f"""<div style="background:{bg2};border-radius:10px;padding:13px;border-left:3px solid #f87171;border:1px solid {border}">
-                      <div style="font-size:.6rem;color:{muted};text-transform:uppercase;margin-bottom:6px">{"⚠️ ความเสี่ยง" if TH else "⚠️ Risks"}</div>
-                      <p style="color:{muted};margin:0;line-height:1.65;font-size:.82rem">{ai.get('risks','—')}</p></div>""",
-                      unsafe_allow_html=True)
-
-                st.markdown(f"""<div style="background:{bg2};border-radius:10px;padding:13px;
-                  border-left:3px solid {rc};border:1px solid {border};margin-top:8px">
-                  <div style="font-size:.6rem;color:{muted};text-transform:uppercase;margin-bottom:6px">{"🧠 สรุปภาพรวม" if TH else "🧠 Summary"}</div>
-                  <p style="color:{muted};margin:0;line-height:1.65;font-size:.85rem">{ai.get('summary','')}</p></div>""",
-                  unsafe_allow_html=True)
 
                 st.markdown("<br>", unsafe_allow_html=True)
 
