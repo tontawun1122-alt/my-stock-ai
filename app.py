@@ -233,6 +233,142 @@ def get_index_data(symbol):
     except: return None
 
 
+def calc_deepv_auto(d) -> dict:
+    """คำนวณ DEEPV Score อัตโนมัติจากตัวเลข ไม่ต้องใช้ API"""
+    def clamp(v): return max(0, min(100, int(v)))
+
+    # ── D: Durability ──────────────────────────────────────────────
+    d_score = 50
+    gm = (d.get("gm") or 0)
+    de = (d.get("de") or 0)
+    cr = (d.get("cr") or 0)
+    beta = (d.get("beta") or 1)
+    if gm > 0.6:   d_score += 25
+    elif gm > 0.4: d_score += 15
+    elif gm > 0.2: d_score += 5
+    else:          d_score -= 10
+    if de < 0.5:   d_score += 15
+    elif de < 1.5: d_score += 5
+    elif de > 3:   d_score -= 15
+    if cr > 2:     d_score += 10
+    elif cr < 1:   d_score -= 10
+    if beta < 1:   d_score += 5
+    elif beta > 2: d_score -= 10
+
+    # ── E1: Earnings Quality ───────────────────────────────────────
+    e1_score = 50
+    nm  = (d.get("nm") or 0)
+    roe = (d.get("roe") or 0)
+    roa = (d.get("roa") or 0)
+    fcf = (d.get("fcf") or 0)
+    rev = (d.get("rev") or 1)
+    if nm > 0.2:   e1_score += 25
+    elif nm > 0.1: e1_score += 15
+    elif nm > 0:   e1_score += 5
+    else:          e1_score -= 20
+    if roe > 0.2:  e1_score += 15
+    elif roe > 0.1:e1_score += 8
+    elif roe < 0:  e1_score -= 15
+    if roa > 0.1:  e1_score += 10
+    elif roa < 0:  e1_score -= 10
+    if fcf > 0 and fcf/rev > 0.1: e1_score += 10
+    elif fcf < 0:  e1_score -= 10
+
+    # ── E2: Execution ──────────────────────────────────────────────
+    e2_score = 50
+    rev_g = (d.get("rev_g") or 0)
+    om    = (d.get("om") or 0)
+    if rev_g > 0.3:   e2_score += 25
+    elif rev_g > 0.15: e2_score += 15
+    elif rev_g > 0.05: e2_score += 8
+    elif rev_g < 0:    e2_score -= 15
+    if om > 0.25:  e2_score += 20
+    elif om > 0.1: e2_score += 10
+    elif om < 0:   e2_score -= 20
+    if roe > 0.15: e2_score += 5
+
+    # ── P: Pricing Power ──────────────────────────────────────────
+    p_score = 50
+    if gm > 0.6:   p_score += 30
+    elif gm > 0.4: p_score += 20
+    elif gm > 0.2: p_score += 10
+    else:          p_score -= 15
+    if om > 0.2:   p_score += 15
+    elif om > 0.1: p_score += 8
+    elif om < 0:   p_score -= 15
+    if rev_g > 0.15: p_score += 10
+
+    # ── V: Valuation ───────────────────────────────────────────────
+    v_score = 50
+    pe     = (d.get("pe") or 0)
+    fwd_pe = (d.get("fwd_pe") or 0)
+    pb     = (d.get("pb") or 0)
+    ps     = (d.get("ps") or 0)
+    if pe > 0:
+        if pe < 15:    v_score += 25
+        elif pe < 25:  v_score += 15
+        elif pe < 40:  v_score += 0
+        elif pe < 60:  v_score -= 15
+        else:          v_score -= 25
+    if fwd_pe > 0:
+        if fwd_pe < 20: v_score += 10
+        elif fwd_pe > 50: v_score -= 10
+    if pb > 0:
+        if pb < 3:     v_score += 10
+        elif pb > 10:  v_score -= 10
+    if ps > 0 and ps < 5: v_score += 5
+    elif ps > 20:      v_score -= 10
+
+    scores = {
+        "D":  clamp(d_score),
+        "E1": clamp(e1_score),
+        "E2": clamp(e2_score),
+        "P":  clamp(p_score),
+        "V":  clamp(v_score),
+    }
+    names_th = {"D":"ความทนทาน","E1":"คุณภาพกำไร","E2":"การบริหาร","P":"อำนาจตั้งราคา","V":"ราคาเหมาะสม"}
+    names_en = {"D":"Durability","E1":"Earnings Quality","E2":"Execution","P":"Pricing Power","V":"Valuation"}
+    summaries_th = {
+        "D": "วัดจาก Gross Margin, D/E, Current Ratio และ Beta",
+        "E1":"วัดจาก Net Margin, ROE, ROA และ Free Cash Flow",
+        "E2":"วัดจาก Revenue Growth และ Operating Margin",
+        "P": "วัดจาก Gross Margin และ Operating Margin",
+        "V": "วัดจาก P/E, Forward P/E, P/B และ P/S",
+    }
+    summaries_en = {
+        "D": "Based on Gross Margin, D/E, Current Ratio, Beta",
+        "E1":"Based on Net Margin, ROE, ROA, Free Cash Flow",
+        "E2":"Based on Revenue Growth and Operating Margin",
+        "P": "Based on Gross Margin and Operating Margin",
+        "V": "Based on P/E, Forward P/E, P/B, P/S",
+    }
+
+    overall = clamp(sum(scores.values()) // 5)
+    rec = "BUY" if overall >= 70 else "HOLD" if overall >= 45 else "AVOID"
+
+    dimensions = {}
+    for k, s in scores.items():
+        lv = "green" if s>=70 else "yellow" if s>=40 else "red"
+        dimensions[k] = {
+            "name":    names_th[k] if TH else names_en[k],
+            "score":   s,
+            "level":   lv,
+            "summary": summaries_th[k] if TH else summaries_en[k],
+            "analysis":"",
+        }
+
+    return {
+        "dimensions":    dimensions,
+        "overall_score": overall,
+        "overall_level": "green" if overall>=70 else "yellow" if overall>=40 else "red",
+        "recommendation": rec,
+        "summary": "",
+        "risks": "",
+        "catalysts": "",
+        "auto": True,  # flag ว่าคำนวณอัตโนมัติ ยังไม่มี AI
+    }
+
+
 def run_ai(api_key, ticker, d, lang):
     genai.configure(api_key=api_key)
     try:
@@ -306,10 +442,14 @@ if btn and tickers_in:
             data = get_stock(tk)
         if not data:
             st.error(f"❌ {'ไม่พบ' if TH else 'Not found'}: {tk}"); continue
-        ai = None
+        # คำนวณ auto score ทันทีโดยไม่ต้องใช้ API
+        auto_result = calc_deepv_auto(data)
+        ai = auto_result  # default = auto
         if api_key:
-            with st.spinner(f"🧠 AI วิเคราะห์ {tk}..."):
-                ai = run_ai(api_key, tk, data, LANG)
+            with st.spinner(f"🧠 AI วิเคราะห์เชิงลึก {tk}..."):
+                ai_full = run_ai(api_key, tk, data, LANG)
+                if "dimensions" in ai_full:
+                    ai = ai_full  # แทนที่ด้วย AI result ที่ละเอียดกว่า
         st.session_state.results[tk] = {"data": data, "ai": ai}
 
 results = st.session_state.results
@@ -517,19 +657,26 @@ else:
             else:
                 st.caption("ไม่พบข่าว" if TH else "No news available")
 
-            # ── DEEPV Analysis
+            # ── DEEPV Analysis (แสดงเสมอ — auto หรือ AI)
             if ai and "dimensions" in ai:
                 st.divider()
                 overall = ai.get("overall_score",0)
                 rec     = ai.get("recommendation","—")
+                is_auto = ai.get("auto", False)
                 rc  = {"BUY":"#34d399","HOLD":"#fbbf24","AVOID":"#f87171"}.get(rec,"#8b92a5")
                 oc  = sc(overall)
+                mode_badge = (
+                    f'<span style="background:#2d313d;color:{muted};border:1px solid {border};border-radius:4px;padding:2px 7px;font-size:.6rem">⚡ Auto Score</span>'
+                    if is_auto else
+                    f'<span style="background:#4f7cff22;color:#4f7cff;border:1px solid #4f7cff44;border-radius:4px;padding:2px 7px;font-size:.6rem">🧠 AI Analysis</span>'
+                )
 
                 st.markdown(f"""<div style="background:{bg2};border-radius:12px;padding:16px;
                   margin-bottom:14px;display:flex;align-items:center;gap:18px;border:1px solid {border}">
                   <div style="text-align:center;min-width:58px">
                     <div style="font-size:1.9rem;font-weight:800;color:{oc}">{overall}</div>
                     <div style="font-size:.56rem;color:{muted};text-transform:uppercase">DEEPV Score</div>
+                    <div style="margin-top:4px">{mode_badge}</div>
                   </div>
                   <div style="flex:1">
                     <div style="background:{border};border-radius:999px;height:6px;overflow:hidden">
@@ -553,6 +700,10 @@ else:
 
                 for key, dim in ai.get("dimensions",{}).items():
                     s=dim.get("score",0); lc=sc(s); lbl=ll(dim.get("level","yellow"))
+                    analysis_text = dim.get('analysis','')
+                    if not analysis_text:
+                        # Auto mode — แสดง summary แทน
+                        analysis_text = dim.get('summary','')
                     st.markdown(f"""<div class="dcard" style="border-left:3px solid {lc}">
                       <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
                         <span style="font-size:1.3rem;font-weight:800;color:{lc};min-width:32px">{key}</span>
@@ -568,10 +719,27 @@ else:
                       </div>
                       <div style="height:3px;background:{border};border-radius:999px;margin-bottom:9px;overflow:hidden">
                         <div style="background:{lc};width:{s}%;height:100%;border-radius:999px"></div></div>
-                      <p style="color:{muted};margin:0;font-size:.83rem;line-height:1.65">{dim.get('analysis','')}</p>
+                      {"" if not analysis_text else f'<p style="color:{muted};margin:0;font-size:.83rem;line-height:1.65">{analysis_text}</p>'}
                     </div>""", unsafe_allow_html=True)
 
-                cl2, cr2 = st.columns(2)
+                # ── ถ้าเป็น auto mode แสดง banner ให้ใส่ API key เพื่อ upgrade
+                if is_auto:
+                    st.markdown(f"""<div style="background:#4f7cff12;border:1px solid #4f7cff33;
+                      border-radius:10px;padding:12px 16px;margin:8px 0;display:flex;align-items:center;gap:12px">
+                      <span style="font-size:1.2rem">🧠</span>
+                      <div>
+                        <div style="font-size:.82rem;font-weight:600;color:#4f7cff">
+                          {"อยากได้การวิเคราะห์เชิงลึกภาษาไทยจาก AI?" if TH else "Want deeper AI analysis in Thai?"}
+                        </div>
+                        <div style="font-size:.72rem;color:{muted}">
+                          {"ใส่ Google Gemini API Key ใน Sidebar เพื่อดูการวิเคราะห์ D.E.E.P.V แบบละเอียด พร้อมปัจจัยบวก ความเสี่ยง และสรุปภาพรวม (ฟรี)" if TH else "Add Gemini API Key in Sidebar for detailed Thai AI analysis with catalysts, risks and summary (Free)"}
+                        </div>
+                      </div>
+                    </div>""", unsafe_allow_html=True)
+                else:
+
+                else:
+                    cl2, cr2 = st.columns(2)
                 with cl2:
                     st.markdown(f"""<div style="background:{bg2};border-radius:10px;padding:13px;border-left:3px solid #34d399;border:1px solid {border}">
                       <div style="font-size:.6rem;color:{muted};text-transform:uppercase;margin-bottom:6px">{"✅ ปัจจัยบวก" if TH else "✅ Catalysts"}</div>
@@ -692,8 +860,6 @@ else:
                 st.balloons()
 
             elif ai and "error" in ai: st.error(f"❌ {ai['error']}")
-            elif not api_key:
-                st.info("💡 " + ("ใส่ API Key เพื่อดู DEEPV Analysis" if TH else "Add API Key to see DEEPV Analysis"))
 
 
     # ── Compare ──────────────────────────────────────────────────────────────────
