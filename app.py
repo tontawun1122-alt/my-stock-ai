@@ -25,67 +25,37 @@ else:
 
 st.markdown(f"""<style>
 .stApp{{background:{bg}}}
-[data-testid="metric-container"]{{
-    background:{bg2}!important;border:1px solid {border}!important;
-    border-radius:8px!important;padding:6px 10px!important;min-height:0!important;
-}}
-[data-testid="metric-container"] label,
-[data-testid="metric-container"] [data-testid="stMetricLabel"] p,
-[data-testid="metric-container"] [data-testid="stMetricLabel"] span{{
-    font-size:.58rem!important;color:{muted}!important;
-    text-transform:uppercase!important;letter-spacing:.04em!important;
-    line-height:1.2!important;margin:0!important;
-}}
-[data-testid="metric-container"] [data-testid="stMetricValue"],
-[data-testid="metric-container"] [data-testid="stMetricValue"] div{{
-    font-size:.88rem!important;font-weight:700!important;
-    color:{txt}!important;line-height:1.3!important;
-    padding:0!important;margin:0!important;
-}}
-[data-testid="metric-container"] [data-testid="stMetricDelta"]{{display:none!important;}}
 [data-testid="stSidebar"]{{background:{bg3};border-right:1px solid {border}}}
 .stButton>button{{
     background:linear-gradient(135deg,#4f7cff,#7c4fff);
     color:white;border:none;border-radius:8px;
     padding:8px 16px;font-weight:600;width:100%;
+    font-size:.82rem;
 }}
 hr{{border-color:{border}!important}}
 .dcard{{background:{bg2};border:1px solid {border};border-radius:12px;padding:16px;margin-bottom:10px}}
 .slbl{{
-    font-size:.6rem;color:{muted};text-transform:uppercase;
-    letter-spacing:.1em;margin-bottom:6px;margin-top:10px;
-    display:block;
+    font-size:.58rem;color:{muted};text-transform:uppercase;
+    letter-spacing:.12em;margin-bottom:6px;margin-top:12px;
+    display:flex;align-items:center;gap:6px;
 }}
-/* ── News card ── */
-.news-item{{
-    background:{bg2};border:1px solid {border};
-    border-radius:8px;padding:12px 14px;margin-bottom:7px;
-}}
-.news-item a{{
-    color:{news_title}!important;
-    text-decoration:none;
-    font-size:.85rem;
-    font-weight:600;
-    line-height:1.5;
-    display:block;
-}}
+.slbl::after{{content:'';flex:1;height:1px;background:{border}}}
+.news-item{{background:{bg2};border:1px solid {border};border-radius:8px;padding:12px 14px;margin-bottom:7px}}
+.news-item a{{color:{news_title}!important;text-decoration:none;font-size:.83rem;font-weight:600;line-height:1.5;display:block}}
 .news-item a:hover{{color:{news_hover}!important}}
-.news-meta{{font-size:.68rem;color:{muted};margin-top:5px}}
-/* ── Peer card ── */
-.peer-card{{
-    background:{bg2};border:1px solid {border};
-    border-radius:10px;padding:12px;text-align:center;
-}}
-.peer-ticker{{font-size:.9rem;font-weight:700;color:{txt}}}
-.peer-name{{font-size:.68rem;color:{muted};margin-bottom:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}
-.peer-price{{font-size:1rem;font-weight:700;color:{txt}}}
-/* ── Index card ── */
+.news-meta{{font-size:.65rem;color:{muted};margin-top:4px}}
+.peer-card{{background:{bg2};border:1px solid {border};border-radius:10px;padding:12px;text-align:center}}
+.peer-ticker{{font-size:.88rem;font-weight:700;color:{txt}}}
+.peer-name{{font-size:.65rem;color:{muted};margin-bottom:5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}}
+.peer-price{{font-size:.95rem;font-weight:700;color:{txt}}}
 .idx-card{{background:{bg2};border:1px solid {border};border-radius:8px;padding:10px;text-align:center;margin-bottom:8px}}
-.idx-name{{font-size:.65rem;color:{muted};margin-bottom:3px}}
-.idx-price{{font-size:.95rem;font-weight:700;color:{txt}}}
-/* Remove streamlit default color override — IMPORTANT */
+.idx-name{{font-size:.6rem;color:{muted};margin-bottom:3px;text-transform:uppercase;letter-spacing:.05em}}
+.idx-price{{font-size:.9rem;font-weight:700;color:{txt}}}
 #MainMenu,footer{{visibility:hidden}}
 .block-container{{padding-top:1.5rem;padding-bottom:2rem}}
+/* Radio buttons compact */
+.stRadio>div{{gap:4px}}
+.stRadio label{{font-size:.75rem!important}}
 </style>""", unsafe_allow_html=True)
 
 
@@ -529,47 +499,70 @@ else:
                         cc2[1].markdown(f'<a href="{d["website"]}" target="_blank" style="color:#4f7cff;font-size:.78rem">🌐 Website</a>',
                                         unsafe_allow_html=True)
 
-            # ── COMPACT Metrics — 5 columns each row
+            # ── HTML Metric Helper
+            def mcard(label, value, accent=None):
+                ac = f"border-top:2px solid {accent};" if accent else ""
+                return f"""<div style="background:{bg2};border:1px solid {border};border-radius:8px;
+                  padding:8px 10px;{ac}">
+                  <div style="font-size:.55rem;color:{muted};text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">{label}</div>
+                  <div style="font-size:.85rem;font-weight:700;color:{txt};line-height:1.2">{value}</div>
+                </div>"""
+
+            def mrow(items, accent=None):
+                cols = st.columns(len(items))
+                for col, (label, value) in zip(cols, items):
+                    col.markdown(mcard(label, value, accent), unsafe_allow_html=True)
+
+            # ── Price section
             st.markdown(f'<span class="slbl">💰 {"ราคา" if TH else "Price"}</span>', unsafe_allow_html=True)
-            mc = st.columns(5)
-            mc[0].metric("Price",       f"${d['price']:,.2f}")
-            mc[1].metric("Prev Close",  usd(d.get("prev_close")))
-            mc[2].metric("Day High",    usd(d.get("day_high")))
-            mc[3].metric("Day Low",     usd(d.get("day_low")))
-            mc[4].metric("Market Cap",  fmt(d["cap"]))
-            mc2 = st.columns(5)
-            mc2[0].metric("52W High",   usd(d.get("52w_high")))
-            mc2[1].metric("52W Low",    usd(d.get("52w_low")))
-            mc2[2].metric("Target",     usd(d.get("target")))
-            mc2[3].metric("Beta",       f"{d['beta']:.2f}" if d.get("beta") else "—")
-            mc2[4].metric("Dividend",   pct(d.get("div")))
+            mrow([
+                ("Price",      f"${d['price']:,.2f}"),
+                ("Prev Close", usd(d.get("prev_close"))),
+                ("Day High",   usd(d.get("day_high"))),
+                ("Day Low",    usd(d.get("day_low"))),
+                ("Market Cap", fmt(d["cap"])),
+            ], accent="#4f7cff")
+            st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
+            mrow([
+                ("52W High",   usd(d.get("52w_high"))),
+                ("52W Low",    usd(d.get("52w_low"))),
+                ("Target",     usd(d.get("target"))),
+                ("Beta",       f"{d['beta']:.2f}" if d.get("beta") else "—"),
+                ("Dividend",   pct(d.get("div"))),
+            ])
 
+            # ── Valuation section
             st.markdown(f'<span class="slbl">📐 Valuation</span>', unsafe_allow_html=True)
-            vc = st.columns(6)
-            vc[0].metric("P/E",      xf(d.get("pe")))
-            vc[1].metric("Fwd P/E",  xf(d.get("fwd_pe")))
-            vc[2].metric("PEG",      xf(d.get("peg")))
-            vc[3].metric("P/B",      xf(d.get("pb")))
-            vc[4].metric("P/S",      xf(d.get("ps")))
-            vc[5].metric("EV/EBITDA",xf(d.get("ev_eb")))
+            mrow([
+                ("P/E",       xf(d.get("pe"))),
+                ("Fwd P/E",   xf(d.get("fwd_pe"))),
+                ("PEG",       xf(d.get("peg"))),
+                ("P/B",       xf(d.get("pb"))),
+                ("P/S",       xf(d.get("ps"))),
+                ("EV/EBITDA", xf(d.get("ev_eb"))),
+            ], accent="#7c4fff")
 
+            # ── Financials section
             st.markdown(f'<span class="slbl">📊 Financials</span>', unsafe_allow_html=True)
-            fc2 = st.columns(6)
-            fc2[0].metric("Revenue",     fmt(d.get("rev")))
-            fc2[1].metric("Rev Growth",  pct(d.get("rev_g")))
-            fc2[2].metric("Gross Margin",pct(d.get("gm")))
-            fc2[3].metric("Op Margin",   pct(d.get("om")))
-            fc2[4].metric("Net Margin",  pct(d.get("nm")))
-            fc2[5].metric("FCF",         fmt(d.get("fcf")))
+            mrow([
+                ("Revenue",      fmt(d.get("rev"))),
+                ("Rev Growth",   pct(d.get("rev_g"))),
+                ("Gross Margin", pct(d.get("gm"))),
+                ("Op Margin",    pct(d.get("om"))),
+                ("Net Margin",   pct(d.get("nm"))),
+                ("FCF",          fmt(d.get("fcf"))),
+            ], accent="#34d399")
 
+            # ── Balance section
             st.markdown(f'<span class="slbl">🏦 Balance</span>', unsafe_allow_html=True)
-            bc = st.columns(6)
-            bc[0].metric("ROE",   pct(d.get("roe")))
-            bc[1].metric("ROA",   pct(d.get("roa")))
-            bc[2].metric("Cash",  fmt(d.get("cash")))
-            bc[3].metric("Debt",  fmt(d.get("debt")))
-            bc[4].metric("D/E",   f"{d['de']:.1f}" if d.get("de") else "—")
-            bc[5].metric("Cur. Ratio", f"{d['cr']:.2f}" if d.get("cr") else "—")
+            mrow([
+                ("ROE",         pct(d.get("roe"))),
+                ("ROA",         pct(d.get("roa"))),
+                ("Cash",        fmt(d.get("cash"))),
+                ("Debt",        fmt(d.get("debt"))),
+                ("D/E",         f"{d['de']:.1f}" if d.get("de") else "—"),
+                ("Cur. Ratio",  f"{d['cr']:.2f}" if d.get("cr") else "—"),
+            ], accent="#fbbf24")
 
             st.divider()
 
