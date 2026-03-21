@@ -235,112 +235,106 @@ def get_index_data(symbol):
 
 def calc_deepv_auto(d) -> dict:
     """คำนวณ DEEPV Score อัตโนมัติจากตัวเลข ไม่ต้องใช้ API"""
-    def clamp(v): return max(0, min(100, int(v)))
+    def clamp(v): return max(5, min(95, int(v)))
 
-    # ── D: Durability ──────────────────────────────────────────────
-    d_score = 50
-    gm = (d.get("gm") or 0)
-    de = (d.get("de") or 0)
-    cr = (d.get("cr") or 0)
-    beta = (d.get("beta") or 1)
-    if gm > 0.6:   d_score += 25
-    elif gm > 0.4: d_score += 15
-    elif gm > 0.2: d_score += 5
-    else:          d_score -= 10
-    if de < 0.5:   d_score += 15
-    elif de < 1.5: d_score += 5
-    elif de > 3:   d_score -= 15
-    if cr > 2:     d_score += 10
-    elif cr < 1:   d_score -= 10
-    if beta < 1:   d_score += 5
-    elif beta > 2: d_score -= 10
+    gm    = d.get("gm")    or 0
+    de    = d.get("de")    or 0
+    cr    = d.get("cr")    or 0
+    beta  = d.get("beta")  or 1
+    nm    = d.get("nm")    or 0
+    roe   = d.get("roe")   or 0
+    roa   = d.get("roa")   or 0
+    fcf   = d.get("fcf")   or 0
+    rev   = d.get("rev")   or 1
+    rev_g = d.get("rev_g") or 0
+    om    = d.get("om")    or 0
+    pe    = d.get("pe")    or 0
+    fwd_pe= d.get("fwd_pe")or 0
+    pb    = d.get("pb")    or 0
+    ps    = d.get("ps")    or 0
 
-    # ── E1: Earnings Quality ───────────────────────────────────────
-    e1_score = 50
-    nm  = (d.get("nm") or 0)
-    roe = (d.get("roe") or 0)
-    roa = (d.get("roa") or 0)
-    fcf = (d.get("fcf") or 0)
-    rev = (d.get("rev") or 1)
-    if nm > 0.2:   e1_score += 25
-    elif nm > 0.1: e1_score += 15
-    elif nm > 0:   e1_score += 5
-    else:          e1_score -= 20
-    if roe > 0.2:  e1_score += 15
-    elif roe > 0.1:e1_score += 8
-    elif roe < 0:  e1_score -= 15
-    if roa > 0.1:  e1_score += 10
-    elif roa < 0:  e1_score -= 10
-    if fcf > 0 and fcf/rev > 0.1: e1_score += 10
-    elif fcf < 0:  e1_score -= 10
+    # ── D: Durability ─────────────────────────────────── max 100
+    # Gross Margin (0-40 pts)
+    d_gm  = 40 if gm>0.6 else 30 if gm>0.4 else 18 if gm>0.2 else 8 if gm>0 else 0
+    # Debt/Equity (0-25 pts)
+    d_de  = 25 if de<0.3 else 18 if de<1 else 10 if de<2 else 4 if de<4 else 0
+    # Current Ratio (0-20 pts)
+    d_cr  = 20 if cr>2.5 else 14 if cr>1.5 else 8 if cr>1 else 2
+    # Beta (0-15 pts)
+    d_bt  = 15 if beta<0.8 else 10 if beta<1.2 else 6 if beta<1.8 else 2
+    d_score = clamp(d_gm + d_de + d_cr + d_bt)
 
-    # ── E2: Execution ──────────────────────────────────────────────
-    e2_score = 50
-    rev_g = (d.get("rev_g") or 0)
-    om    = (d.get("om") or 0)
-    if rev_g > 0.3:   e2_score += 25
-    elif rev_g > 0.15: e2_score += 15
-    elif rev_g > 0.05: e2_score += 8
-    elif rev_g < 0:    e2_score -= 15
-    if om > 0.25:  e2_score += 20
-    elif om > 0.1: e2_score += 10
-    elif om < 0:   e2_score -= 20
-    if roe > 0.15: e2_score += 5
+    # ── E1: Earnings Quality ──────────────────────────── max 100
+    # Net Margin (0-35 pts)
+    e1_nm = 35 if nm>0.25 else 25 if nm>0.15 else 14 if nm>0.05 else 4 if nm>0 else 0
+    # ROE (0-30 pts)
+    e1_roe= 30 if roe>0.25 else 20 if roe>0.15 else 10 if roe>0.05 else 2 if roe>0 else 0
+    # ROA (0-20 pts)
+    e1_roa= 20 if roa>0.12 else 13 if roa>0.06 else 6 if roa>0 else 0
+    # FCF Yield (0-15 pts)
+    fcf_yield = fcf/rev if rev else 0
+    e1_fcf= 15 if fcf_yield>0.15 else 10 if fcf_yield>0.08 else 5 if fcf_yield>0 else 0
+    e1_score = clamp(e1_nm + e1_roe + e1_roa + e1_fcf)
 
-    # ── P: Pricing Power ──────────────────────────────────────────
-    p_score = 50
-    if gm > 0.6:   p_score += 30
-    elif gm > 0.4: p_score += 20
-    elif gm > 0.2: p_score += 10
-    else:          p_score -= 15
-    if om > 0.2:   p_score += 15
-    elif om > 0.1: p_score += 8
-    elif om < 0:   p_score -= 15
-    if rev_g > 0.15: p_score += 10
+    # ── E2: Execution ─────────────────────────────────── max 100
+    # Revenue Growth (0-50 pts)
+    e2_rg = 50 if rev_g>0.35 else 38 if rev_g>0.2 else 24 if rev_g>0.1 else 12 if rev_g>0 else 0
+    # Operating Margin (0-35 pts)
+    e2_om = 35 if om>0.3 else 25 if om>0.15 else 14 if om>0.05 else 4 if om>0 else 0
+    # ROE bonus (0-15 pts)
+    e2_roe= 15 if roe>0.2 else 8 if roe>0.1 else 2 if roe>0 else 0
+    e2_score = clamp(e2_rg + e2_om + e2_roe)
 
-    # ── V: Valuation ───────────────────────────────────────────────
-    v_score = 50
-    pe     = (d.get("pe") or 0)
-    fwd_pe = (d.get("fwd_pe") or 0)
-    pb     = (d.get("pb") or 0)
-    ps     = (d.get("ps") or 0)
-    if pe > 0:
-        if pe < 15:    v_score += 25
-        elif pe < 25:  v_score += 15
-        elif pe < 40:  v_score += 0
-        elif pe < 60:  v_score -= 15
-        else:          v_score -= 25
+    # ── P: Pricing Power ──────────────────────────────── max 100
+    # Gross Margin หลัก (0-55 pts)
+    p_gm  = 55 if gm>0.65 else 42 if gm>0.5 else 28 if gm>0.35 else 14 if gm>0.2 else 4
+    # Operating Margin (0-30 pts)
+    p_om  = 30 if om>0.25 else 20 if om>0.12 else 10 if om>0.05 else 2 if om>0 else 0
+    # Rev Growth สะท้อน demand (0-15 pts)
+    p_rg  = 15 if rev_g>0.2 else 8 if rev_g>0.1 else 3 if rev_g>0 else 0
+    p_score = clamp(p_gm + p_om + p_rg)
+
+    # ── V: Valuation ──────────────────────────────────── max 100
+    # เริ่มที่ 80 แล้วลดตาม P/E (ยิ่งแพงยิ่งต่ำ)
+    if pe <= 0:
+        v_pe = 40  # ไม่มี P/E = ขาดทุน
+    elif pe < 12:  v_pe = 80
+    elif pe < 18:  v_pe = 70
+    elif pe < 25:  v_pe = 58
+    elif pe < 35:  v_pe = 44
+    elif pe < 50:  v_pe = 30
+    elif pe < 80:  v_pe = 18
+    else:          v_pe = 8
+
+    # Forward P/E adjust (±10 pts)
+    v_fpe = 0
     if fwd_pe > 0:
-        if fwd_pe < 20: v_score += 10
-        elif fwd_pe > 50: v_score -= 10
-    if pb > 0:
-        if pb < 3:     v_score += 10
-        elif pb > 10:  v_score -= 10
-    if ps > 0 and ps < 5: v_score += 5
-    elif ps > 20:      v_score -= 10
+        v_fpe = 10 if fwd_pe < pe*0.8 else -10 if fwd_pe > pe else 0
 
-    scores = {
-        "D":  clamp(d_score),
-        "E1": clamp(e1_score),
-        "E2": clamp(e2_score),
-        "P":  clamp(p_score),
-        "V":  clamp(v_score),
-    }
+    # P/B (0-10 pts)
+    v_pb  = 10 if pb<2 else 6 if pb<5 else 2 if pb<10 else -5
+
+    # P/S (0-10 pts เหมาะ growth stock)
+    v_ps  = 10 if ps<3 else 4 if ps<8 else 0 if ps<15 else -5
+
+    v_score = clamp(v_pe + v_fpe + v_pb + v_ps)
+
+    scores = {"D": d_score, "E1": e1_score, "E2": e2_score, "P": p_score, "V": v_score}
     names_th = {"D":"ความทนทาน","E1":"คุณภาพกำไร","E2":"การบริหาร","P":"อำนาจตั้งราคา","V":"ราคาเหมาะสม"}
     names_en = {"D":"Durability","E1":"Earnings Quality","E2":"Execution","P":"Pricing Power","V":"Valuation"}
     summaries_th = {
-        "D": "วัดจาก Gross Margin, D/E, Current Ratio และ Beta",
-        "E1":"วัดจาก Net Margin, ROE, ROA และ Free Cash Flow",
-        "E2":"วัดจาก Revenue Growth และ Operating Margin",
-        "P": "วัดจาก Gross Margin และ Operating Margin",
-        "V": "วัดจาก P/E, Forward P/E, P/B และ P/S",
+        "D": f"Gross Margin {gm*100:.1f}% | D/E {de:.1f} | Current Ratio {cr:.1f}",
+        "E1":f"Net Margin {nm*100:.1f}% | ROE {roe*100:.1f}% | ROA {roa*100:.1f}%",
+        "E2":f"Rev Growth {rev_g*100:.1f}% | Op Margin {om*100:.1f}%",
+        "P": f"Gross Margin {gm*100:.1f}% | Op Margin {om*100:.1f}%",
+        "V": f"P/E {pe:.1f}x | Fwd P/E {fwd_pe:.1f}x | P/B {pb:.1f}x",
     }
     summaries_en = {
-        "D": "Based on Gross Margin, D/E, Current Ratio, Beta",
-        "E1":"Based on Net Margin, ROE, ROA, Free Cash Flow",
-        "E2":"Based on Revenue Growth and Operating Margin",
-        "P": "Based on Gross Margin and Operating Margin",
-        "V": "Based on P/E, Forward P/E, P/B, P/S",
+        "D": f"Gross Margin {gm*100:.1f}% | D/E {de:.1f} | Current Ratio {cr:.1f}",
+        "E1":f"Net Margin {nm*100:.1f}% | ROE {roe*100:.1f}% | ROA {roa*100:.1f}%",
+        "E2":f"Rev Growth {rev_g*100:.1f}% | Op Margin {om*100:.1f}%",
+        "P": f"Gross Margin {gm*100:.1f}% | Op Margin {om*100:.1f}%",
+        "V": f"P/E {pe:.1f}x | Fwd P/E {fwd_pe:.1f}x | P/B {pb:.1f}x",
     }
 
     overall = clamp(sum(scores.values()) // 5)
@@ -351,21 +345,15 @@ def calc_deepv_auto(d) -> dict:
         lv = "green" if s>=70 else "yellow" if s>=40 else "red"
         dimensions[k] = {
             "name":    names_th[k] if TH else names_en[k],
-            "score":   s,
-            "level":   lv,
+            "score":   s, "level": lv,
             "summary": summaries_th[k] if TH else summaries_en[k],
             "analysis":"",
         }
 
     return {
-        "dimensions":    dimensions,
-        "overall_score": overall,
+        "dimensions": dimensions, "overall_score": overall,
         "overall_level": "green" if overall>=70 else "yellow" if overall>=40 else "red",
-        "recommendation": rec,
-        "summary": "",
-        "risks": "",
-        "catalysts": "",
-        "auto": True,  # flag ว่าคำนวณอัตโนมัติ ยังไม่มี AI
+        "recommendation": rec, "summary":"", "risks":"", "catalysts":"", "auto": True,
     }
 
 
